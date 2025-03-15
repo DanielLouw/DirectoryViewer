@@ -1,0 +1,38 @@
+services:
+  # GraphQL API service
+  api:
+    build:
+      context: ./JobJackDirectoryViewerAPI
+      dockerfile: Dockerfile
+    container_name: directory-viewer-api
+    ports:
+      - "4000:4000"
+    volumes:
+      - /:/host:ro  # Mount the host filesystem as read-only
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Angular UI service
+  ui:
+    build:
+      context: ./JobJackDirectoryViewerUI
+      dockerfile: Dockerfile
+    container_name: directory-viewer-ui
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s 

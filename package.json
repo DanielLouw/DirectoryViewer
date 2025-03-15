@@ -1,0 +1,18 @@
+{
+  "name": "job-jack-directory-viewer",
+  "version": "1.0.0",
+  "description": "A full-stack application for browsing file systems",
+  "scripts": {
+    "start:api": "cd JobJackDirectoryViewerAPI && npm start",
+    "start:ui": "cd JobJackDirectoryViewerUI && npm start",
+    "install:api": "cd JobJackDirectoryViewerAPI && npm install",
+    "install:ui": "cd JobJackDirectoryViewerUI && npm install",
+    "install:all": "npm run install:api && npm run install:ui",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f"
+  },
+  "author": "",
+  "license": "MIT"
+} 

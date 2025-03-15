@@ -1,0 +1,338 @@
+.directory-viewer-container {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.directory-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+  
+  h2 {
+    margin: 0 0 15px 0;
+    color: #333;
+  }
+}
+
+.path-input {
+  display: flex;
+  gap: 10px;
+  
+  input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    
+    &:focus {
+      outline: none;
+      border-color: #0078d4;
+      box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+    }
+  }
+  
+  button {
+    padding: 10px 15px;
+    background-color: #0078d4;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    
+    &:hover {
+      background-color: #106ebe;
+    }
+    
+    &:disabled {
+      background-color: #ccc;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* Search and Filter Styles */
+.search-filter-controls {
+  margin: 15px 0;
+  
+  .search-box {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    
+    input {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      
+      &:focus {
+        outline: none;
+        border-color: #0078d4;
+        box-shadow: 0 0 0 2px rgba(0, 120, 212, 0.2);
+      }
+    }
+    
+    .filter-toggle {
+      padding: 10px 15px;
+      background-color: #f0f7ff;
+      color: #0078d4;
+      border: 1px solid #cce5ff;
+      border-radius: 4px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      
+      &:hover {
+        background-color: #e1f0ff;
+      }
+    }
+  }
+  
+  .filter-panel {
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 15px;
+    
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 10px;
+      
+      label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        
+        input[type="radio"] {
+          margin: 0;
+        }
+        
+        input[type="text"],
+        input[type="number"] {
+          padding: 8px;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          font-size: 14px;
+          
+          &:focus {
+            outline: none;
+            border-color: #0078d4;
+          }
+        }
+      }
+    }
+    
+    .filter-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      
+      button {
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        
+        &:first-child {
+          background-color: #0078d4;
+          color: white;
+          border: none;
+          
+          &:hover {
+            background-color: #106ebe;
+          }
+        }
+        
+        &:last-child {
+          background-color: #f6f8fa;
+          color: #24292e;
+          border: 1px solid #ddd;
+          
+          &:hover {
+            background-color: #e1e4e8;
+          }
+        }
+      }
+    }
+  }
+}
+
+.path-hint {
+  margin-top: 8px;
+  color: #666;
+  font-style: italic;
+  
+  .docker-hint {
+    display: block;
+    background-color: #f0f7ff;
+    border-left: 4px solid #0078d4;
+    padding: 12px;
+    margin-top: 10px;
+    font-style: normal;
+    color: #333;
+    border-radius: 0 4px 4px 0;
+    
+    strong {
+      color: #0078d4;
+      display: block;
+      margin-bottom: 8px;
+      font-size: 16px;
+    }
+    
+    p {
+      margin: 8px 0;
+      line-height: 1.5;
+    }
+    
+    ul {
+      margin: 8px 0;
+      padding-left: 20px;
+    }
+    
+    code {
+      background-color: #e6f0fa;
+      padding: 2px 4px;
+      border-radius: 3px;
+      font-family: 'Consolas', 'Monaco', monospace;
+      border: 1px solid #cce5ff;
+    }
+    
+    .docker-note {
+      font-style: italic;
+      color: #d73a49;
+      margin-top: 10px;
+      font-size: 0.9em;
+    }
+  }
+}
+
+.error-message {
+  display: flex;
+  align-items: flex-start;
+  padding: 15px;
+  background-color: #fde7e9;
+  border-left: 4px solid #d73a49;
+  border-radius: 4px;
+  margin-bottom: 20px;
+  
+  .error-icon {
+    font-size: 24px;
+    margin-right: 15px;
+  }
+  
+  .error-content {
+    h3 {
+      margin: 0 0 5px 0;
+      color: #d73a49;
+    }
+    
+    p {
+      margin: 0;
+      color: #24292e;
+    }
+  }
+}
+
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 30px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Performance Stats */
+.performance-stats {
+  text-align: right;
+  color: #666;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.directory-content {
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    
+    th {
+      background-color: #f6f8fa;
+      font-weight: 600;
+      color: #24292e;
+      cursor: pointer;
+      user-select: none;
+      position: relative;
+      
+      &:hover {
+        background-color: #e1e4e8;
+      }
+    }
+    
+    tr.is-directory {
+      cursor: pointer;
+      
+      &:hover {
+        background-color: #f6f8fa;
+      }
+    }
+    
+    .folder-icon, .file-icon {
+      font-size: 18px;
+    }
+    
+    .empty-message {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+      padding: 30px;
+    }
+  }
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+  gap: 15px;
+  
+  button {
+    padding: 8px 15px;
+    background-color: #f6f8fa;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    
+    &:hover:not(:disabled) {
+      background-color: #e1e4e8;
+    }
+    
+    &:disabled {
+      color: #999;
+      cursor: not-allowed;
+    }
+  }
+  
+  span {
+    color: #586069;
+  }
+} 

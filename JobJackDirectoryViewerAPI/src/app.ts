@@ -1,0 +1,31 @@
+import { ApolloServer } from 'apollo-server';
+import { GraphQLFormattedError } from 'graphql';
+import { typeDefs } from './schema/schema';
+import { resolvers } from './resolvers/directory';
+import { serverConfig } from './config/server';
+
+// Create an Apollo Server instance
+const server = new ApolloServer({ 
+    typeDefs, 
+    resolvers,
+    introspection: true, // Enable introspection in all environments
+    formatError: (error: GraphQLFormattedError): GraphQLFormattedError => {
+        console.error('GraphQL Error:', error);
+        return error;
+    },
+    cors: {
+        origin: '*',
+        credentials: true,
+        methods: ['GET', 'POST', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'apollo-query-plan-experimental', 'x-apollo-tracing', 'Access-Control-Allow-Origin', 'Access-Control-Allow-Methods', 'Access-Control-Allow-Headers'],
+        preflightContinue: false,
+        optionsSuccessStatus: 204
+    }
+});
+
+// Start the server
+server.listen(serverConfig.port).then(({ url }: { url: string }) => {
+    console.log(`Server ready at ${url}`);
+    console.log(`Environment: ${serverConfig.environment}`);
+    console.log('CORS enabled for all origins');
+}); 

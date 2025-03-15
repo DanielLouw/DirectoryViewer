@@ -1,0 +1,161 @@
+<div class="directory-viewer-container">
+  <div class="directory-header">
+    <h2>Directory Viewer</h2>
+    <div class="path-input">
+      <input 
+        type="text" 
+        [(ngModel)]="currentPath" 
+        placeholder="{{ getPathFormatHint() }}" 
+        (keyup.enter)="loadDirectory()"
+      />
+      <button (click)="loadDirectory()">Load</button>
+      <button (click)="navigateToParent()" [disabled]="isLoading">Go Up</button>
+      <button (click)="navigateToRoot()" [disabled]="isLoading">Root</button>
+    </div>
+    
+    <!-- Search and Filter Controls -->
+    <div class="search-filter-controls">
+      <div class="search-box">
+        <input 
+          type="text" 
+          placeholder="Search files..." 
+          [ngModel]="filterForm.get('nameContains')?.value"
+          (input)="onSearch($any($event.target).value)"
+        />
+        <button (click)="toggleFilterPanel()" class="filter-toggle">
+          <span>Filters</span>
+          <span *ngIf="isFilterPanelVisible">▲</span>
+          <span *ngIf="!isFilterPanelVisible">▼</span>
+        </button>
+      </div>
+      
+      <!-- Advanced Filter Panel -->
+      <div *ngIf="isFilterPanelVisible" class="filter-panel" [formGroup]="filterForm">
+        <div class="filter-row">
+          <label>
+            <input type="radio" formControlName="isDirectory" [value]="true"> 
+            Directories Only
+          </label>
+          <label>
+            <input type="radio" formControlName="isDirectory" [value]="false"> 
+            Files Only
+          </label>
+          <label>
+            <input type="radio" formControlName="isDirectory" [value]="null"> 
+            Both
+          </label>
+        </div>
+        
+        <div class="filter-row">
+          <label>
+            File Extension:
+            <input type="text" formControlName="extension" placeholder="e.g., txt, pdf">
+          </label>
+        </div>
+        
+        <div class="filter-row">
+          <label>
+            Min Size (bytes):
+            <input type="number" formControlName="minSize" min="0">
+          </label>
+          <label>
+            Max Size (bytes):
+            <input type="number" formControlName="maxSize" min="0">
+          </label>
+        </div>
+        
+        <div class="filter-actions">
+          <button (click)="applyFilters()">Apply Filters</button>
+          <button (click)="resetFilters()">Reset</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="path-hint">
+      <small *ngIf="!isRunningInDocker">Note: When running in Docker, Windows paths will be automatically converted to access the host filesystem.</small>
+      <div *ngIf="isRunningInDocker" class="docker-hint">
+        <strong>Docker Environment Detected</strong>
+        <p>Please use Linux paths to navigate the container filesystem:</p>
+        <ul>
+          <li><code>/</code> - Root of the container filesystem</li>
+          <li><code>/bin</code> - System binaries</li>
+          <li><code>/etc</code> - Configuration files</li>
+        </ul>
+        <p>If the host filesystem is mounted, you may be able to access it at a mount point like:</p>
+        <ul>
+          <li><code>/host</code> - Possible mount point for host filesystem</li>
+          <li><code>/mnt</code> - Common mount directory</li>
+        </ul>
+        <p class="docker-note">Windows-style paths (with backslashes and drive letters) are not directly accessible in Docker.</p>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="error" class="error-message">
+    <div class="error-icon">⚠️</div>
+    <div class="error-content">
+      <h3>Error</h3>
+      <p>{{ error }}</p>
+    </div>
+  </div>
+
+  <div *ngIf="isLoading" class="loading">
+    Loading directory contents...
+  </div>
+
+  <!-- Performance Stats -->
+  <div *ngIf="!isLoading && !error" class="performance-stats">
+    <small>Loaded {{ totalItems }} items in {{ loadTime.toFixed(2) }}ms</small>
+  </div>
+
+  <div *ngIf="!isLoading && !error" class="directory-content">
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th (click)="setSortField(sortFields[0].value)">
+            Name {{ getSortIcon(sortFields[0].value) }}
+          </th>
+          <th (click)="setSortField(sortFields[1].value)">
+            Size {{ getSortIcon(sortFields[1].value) }}
+          </th>
+          <th (click)="setSortField(sortFields[2].value)">
+            Created {{ getSortIcon(sortFields[2].value) }}
+          </th>
+          <th>Permissions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let item of items" (click)="navigateToDirectory(item)" [class.is-directory]="item.isDirectory">
+          <td>
+            <span *ngIf="item.isDirectory" class="folder-icon">📁</span>
+            <span *ngIf="!item.isDirectory" class="file-icon">📄</span>
+          </td>
+          <td>{{ item.name }}</td>
+          <td>{{ item.isDirectory ? '-' : (item.size | fileSize) }}</td>
+          <td>{{ item.createdAt | date:'medium' }}</td>
+          <td>{{ item.permissions }}</td>
+        </tr>
+        <tr *ngIf="items.length === 0 && !error">
+          <td colspan="5" class="empty-message">This directory is empty.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div *ngIf="totalPages > 1" class="pagination">
+      <button 
+        [disabled]="currentPage === 1" 
+        (click)="goToPage(currentPage - 1)"
+      >
+        Previous
+      </button>
+      <span>Page {{ currentPage }} of {{ totalPages }}</span>
+      <button 
+        [disabled]="currentPage === totalPages" 
+        (click)="goToPage(currentPage + 1)"
+      >
+        Next
+      </button>
+    </div>
+  </div>
+</div> 
