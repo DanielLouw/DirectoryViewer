@@ -16,7 +16,7 @@ A full-stack application for browsing and navigating file systems, with support 
 
 The application consists of two main components:
 
-1. **API (Node.js/Express/GraphQL)**: Backend service that handles file system operations
+1. **API (Node.js/GraphQL)**: Backend service that handles file system operations
 2. **UI (Angular)**: Frontend application that provides the user interface
 
 ## Prerequisites
