@@ -2,10 +2,10 @@ export interface File {
     name: string;
     path: string;
     size: number;
-    extension?: string;
-    createdAt: string;
-    permissions: string;
     isDirectory: boolean;
+    createdAt: Date;
+    permissions: string;
+    extension?: string;
 }
 
 export enum SortField {
@@ -17,8 +17,8 @@ export enum SortField {
 }
 
 export enum SortOrder {
-    ASC = 'ASC',
-    DESC = 'DESC'
+    ASC = 'asc',
+    DESC = 'desc'
 }
 
 export interface SortOption {
@@ -28,14 +28,14 @@ export interface SortOption {
 
 export interface FilterOption {
     nameContains?: string;
-    isDirectory?: boolean;
+    isDirectory?: boolean | null;
+    extension?: string;
     minSize?: number;
     maxSize?: number;
-    extension?: string;
 }
 
 export interface DirectoryResult {
     items: File[];
-    totalCount: number;
+    totalItems: number;
     error?: string;
 } 
