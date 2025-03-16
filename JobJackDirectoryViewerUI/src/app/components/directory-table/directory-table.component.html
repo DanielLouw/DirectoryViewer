@@ -20,14 +20,14 @@
     <thead>
       <tr>
         <th>Type</th>
-        <th (click)="onSort(sortFields[0].value)">
-          Name {{ getSortIcon(sortFields[0].value) }}
+        <th (click)="onSort(SortField.NAME)">
+          Name {{ getSortIcon(SortField.NAME) }}
         </th>
-        <th (click)="onSort(sortFields[1].value)">
-          Size {{ getSortIcon(sortFields[1].value) }}
+        <th (click)="onSort(SortField.SIZE)">
+          Size {{ getSortIcon(SortField.SIZE) }}
         </th>
-        <th (click)="onSort(sortFields[2].value)">
-          Created {{ getSortIcon(sortFields[2].value) }}
+        <th (click)="onSort(SortField.CREATED_AT)">
+          Created {{ getSortIcon(SortField.CREATED_AT) }}
         </th>
         <th>Permissions</th>
       </tr>

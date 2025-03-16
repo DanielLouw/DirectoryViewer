@@ -4,11 +4,10 @@ import { typeDefs } from './schema/schema';
 import { resolvers } from './resolvers/directory';
 import { serverConfig } from './config/server';
 
-// Create an Apollo Server instance
 const server = new ApolloServer({ 
     typeDefs, 
     resolvers,
-    introspection: true, // Enable introspection in all environments
+    introspection: true,
     formatError: (error: GraphQLFormattedError): GraphQLFormattedError => {
         console.error('GraphQL Error:', error);
         return error;
@@ -23,9 +22,7 @@ const server = new ApolloServer({
     }
 });
 
-// Start the server
 server.listen(serverConfig.port).then(({ url }: { url: string }) => {
     console.log(`Server ready at ${url}`);
     console.log(`Environment: ${serverConfig.environment}`);
-    console.log('CORS enabled for all origins');
 }); 

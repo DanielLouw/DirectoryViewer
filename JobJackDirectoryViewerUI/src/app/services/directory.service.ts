@@ -45,7 +45,7 @@ export class DirectoryService {
     
     return {
       field: sort.field,
-      order: sort.order.toUpperCase()
+      order: sort.order
     };
   }
 
@@ -56,6 +56,19 @@ export class DirectoryService {
     sortBy?: SortOption,
     filter?: FilterOption
   ): Observable<DirectoryResult> {
+    const variables = {
+      path,
+      skip,
+      limit,
+      sortBy: sortBy ? {
+        field: sortBy.field,
+        order: sortBy.order
+      } : undefined,
+      filter
+    };
+    
+    console.log('GraphQL request variables:', JSON.stringify(variables));
+    
     return this.apollo
       .query<{
         directoryListing: {
@@ -65,24 +78,18 @@ export class DirectoryService {
         };
       }>({
         query: GET_DIRECTORY_LISTING,
-        variables: {
-          path,
-          skip,
-          limit,
-          sortBy: sortBy ? {
-            field: sortBy.field,
-            order: sortBy.order.toUpperCase()
-          } : undefined,
-          filter
-        },
+        variables,
         fetchPolicy: 'network-only'
       })
       .pipe(
-        map(result => ({
-          items: result.data.directoryListing.items,
-          totalItems: result.data.directoryListing.totalCount,
-          error: result.data.directoryListing.error
-        }))
+        map(result => {
+          console.log('GraphQL response:', result.data);
+          return {
+            items: result.data.directoryListing.items,
+            totalItems: result.data.directoryListing.totalCount,
+            error: result.data.directoryListing.error
+          };
+        })
       );
   }
 

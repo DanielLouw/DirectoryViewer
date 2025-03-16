@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { File, SortField } from '../../models/file.model';
+import { File, SortField, SortOption, SortOrder } from '../../models/file.model';
 import { FileSizePipe } from '../../pipes/file-size.pipe';
 
 @Component({
@@ -17,13 +17,20 @@ export class DirectoryTableComponent {
   @Input() totalItems: number = 0;
   @Input() loadTime: number = 0;
   @Input() sortFields: { label: string; value: SortField }[] = [];
+  @Input() currentSort: SortOption = { field: SortField.NAME, order: SortOrder.ASC };
   
   @Output() navigate = new EventEmitter<File>();
   @Output() sortChange = new EventEmitter<SortField>();
 
+  // Make SortField enum available in the template
+  SortField = SortField;
+
   getSortIcon(field: SortField): string {
-    // Implement sort icon logic here
-    return ''; // Placeholder
+    if (this.currentSort.field !== field) {
+      return '';
+    }
+    
+    return this.currentSort.order === SortOrder.ASC ? '↑' : '↓';
   }
 
   onNavigate(item: File) {
@@ -31,6 +38,7 @@ export class DirectoryTableComponent {
   }
 
   onSort(field: SortField) {
+    console.log('Sort clicked:', field);
     this.sortChange.emit(field);
   }
 } 
