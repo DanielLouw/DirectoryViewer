@@ -34,28 +34,6 @@ const GET_DIRECTORY_LISTING = gql`
   }
 `;
 
-const GET_CACHE_STATS = gql`
-  query GetCacheStats {
-    cacheStats {
-      size
-      entries {
-        path
-        count
-        age
-      }
-    }
-  }
-`;
-
-const GET_WATCHER_STATS = gql`
-  query GetWatcherStats {
-    watcherStats {
-      count
-      paths
-    }
-  }
-`;
-
 @Injectable({
   providedIn: 'root'
 })
@@ -105,28 +83,6 @@ export class DirectoryService {
           totalItems: result.data.directoryListing.totalCount,
           error: result.data.directoryListing.error
         }))
-      );
-  }
-  
-  getCacheStats(): Observable<any> {
-    return this.apollo
-      .watchQuery({
-        query: GET_CACHE_STATS,
-        fetchPolicy: 'network-only' // Always get fresh data
-      })
-      .valueChanges.pipe(
-        map((result: any) => result.data.cacheStats)
-      );
-  }
-  
-  getWatcherStats(): Observable<any> {
-    return this.apollo
-      .watchQuery({
-        query: GET_WATCHER_STATS,
-        fetchPolicy: 'network-only' // Always get fresh data
-      })
-      .valueChanges.pipe(
-        map((result: any) => result.data.watcherStats)
       );
   }
 

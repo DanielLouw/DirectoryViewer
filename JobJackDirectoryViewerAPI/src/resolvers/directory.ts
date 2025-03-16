@@ -1,8 +1,6 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { File, DirectoryResult, SortOption, FilterOption, SortField, SortOrder } from '../types/file';
-import { directoryCacheService } from '../services/cache.service';
-import { fileSystemWatcherService } from '../services/watcher.service';
 
 // Helper function to get the correct path for Docker environment
 function getDockerPath(inputPath: string): string {
@@ -175,21 +173,6 @@ async function processFilesBatch(
     };
 }
 
-// Track access frequency for directories
-const directoryAccessCount = new Map<string, number>();
-
-// Helper to increment access count and start watching frequently accessed directories
-function trackDirectoryAccess(dirPath: string): void {
-    const currentCount = directoryAccessCount.get(dirPath) || 0;
-    const newCount = currentCount + 1;
-    directoryAccessCount.set(dirPath, newCount);
-    
-    // If this directory is frequently accessed (more than 3 times), start watching it
-    if (newCount === 3) {
-        fileSystemWatcherService.watchDirectory(dirPath);
-    }
-}
-
 export const resolvers = {
     Query: {
         directoryListing: async (
@@ -212,9 +195,6 @@ export const resolvers = {
                 // Convert the path for Docker environment
                 const dockerPath = getDockerPath(dirPath);
                 
-                // Track directory access for frequently accessed directories
-                trackDirectoryAccess(dockerPath);
-                
                 // Validate the directory path
                 try {
                     const stats = await fs.stat(dockerPath);
@@ -234,29 +214,18 @@ export const resolvers = {
                     };
                 }
                 
-                // Try to get directory listing from cache first
                 let files: string[] = [];
-                const cachedFiles = await directoryCacheService.getCachedDirectoryListing(dockerPath);
-                
-                if (cachedFiles) {
-                    console.log(`Using cached directory listing for ${dirPath}`);
-                    files = cachedFiles;
-                } else {
-                    try {
-                        // Use the more efficient readdir method
-                        console.log(`Reading directory contents for ${dirPath}`);
-                        files = await fs.readdir(dockerPath);
-                        
-                        // Cache the directory listing for future requests
-                        directoryCacheService.cacheDirectoryListing(dockerPath, files);
-                    } catch (error: any) {
-                        console.error(`Failed to read directory: ${dirPath}`, error);
-                        return {
-                            items: [],
-                            totalCount: 0,
-                            error: `Cannot read directory: ${error.code === 'EPERM' ? 'Permission denied' : error.message}`
-                        };
-                    }
+                try {
+                    // Read directory contents
+                    console.log(`Reading directory contents for ${dirPath}`);
+                    files = await fs.readdir(dockerPath);
+                } catch (error: any) {
+                    console.error(`Failed to read directory: ${dirPath}`, error);
+                    return {
+                        items: [],
+                        totalCount: 0,
+                        error: `Cannot read directory: ${error.code === 'EPERM' ? 'Permission denied' : error.message}`
+                    };
                 }
                 
                 // Process files with sorting and filtering
@@ -274,16 +243,6 @@ export const resolvers = {
                     error: `Failed to read directory: ${error.message}`
                 };
             }
-        },
-        
-        // Add a new query to get cache statistics
-        cacheStats: async (): Promise<any> => {
-            return directoryCacheService.getCacheStats();
-        },
-        
-        // Add a new query to get watcher statistics
-        watcherStats: async (): Promise<any> => {
-            return fileSystemWatcherService.getWatcherStats();
         }
-    },    
+    }
 }; 
