@@ -1,0 +1,51 @@
+<div *ngIf="error" class="error-message">
+  <div class="error-icon">⚠️</div>
+  <div class="error-content">
+    <h3>Error</h3>
+    <p>{{ error }}</p>
+  </div>
+</div>
+
+<div *ngIf="isLoading" class="loading">
+  Loading directory contents...
+</div>
+
+<!-- Performance Stats -->
+<div *ngIf="!isLoading && !error" class="performance-stats">
+  <small>Loaded {{ totalItems }} items in {{ loadTime.toFixed(2) }}ms</small>
+</div>
+
+<div *ngIf="!isLoading && !error" class="directory-content">
+  <table>
+    <thead>
+      <tr>
+        <th>Type</th>
+        <th (click)="onSort(sortFields[0].value)">
+          Name {{ getSortIcon(sortFields[0].value) }}
+        </th>
+        <th (click)="onSort(sortFields[1].value)">
+          Size {{ getSortIcon(sortFields[1].value) }}
+        </th>
+        <th (click)="onSort(sortFields[2].value)">
+          Created {{ getSortIcon(sortFields[2].value) }}
+        </th>
+        <th>Permissions</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let item of items" (click)="onNavigate(item)" [class.is-directory]="item.isDirectory">
+        <td>
+          <span *ngIf="item.isDirectory" class="folder-icon">📁</span>
+          <span *ngIf="!item.isDirectory" class="file-icon">📄</span>
+        </td>
+        <td>{{ item.name }}</td>
+        <td>{{ item.isDirectory ? '-' : (item.size | fileSize) }}</td>
+        <td>{{ item.createdAt | date:'medium' }}</td>
+        <td>{{ item.permissions }}</td>
+      </tr>
+      <tr *ngIf="items.length === 0 && !error">
+        <td colspan="5" class="empty-message">This directory is empty.</td>
+      </tr>
+    </tbody>
+  </table>
+</div> 

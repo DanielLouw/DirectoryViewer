@@ -1,0 +1,93 @@
+<!-- Path Input Section -->
+<div class="directory-header">
+  <h2>Directory Viewer</h2>
+  <div class="path-input">
+    <input 
+      type="text" 
+      [ngModel]="currentPath" 
+      (ngModelChange)="onPathChange($event)"
+      placeholder="{{ getPathFormatHint() }}" 
+      (keyup.enter)="onLoadDirectory()"
+    />
+    <button (click)="onLoadDirectory()">Load</button>
+    <button (click)="onNavigateToParent()" [disabled]="isLoading">Go Up</button>
+    <button (click)="onNavigateToRoot()" [disabled]="isLoading">Root</button>
+  </div>
+  
+  <!-- Search and Filter Controls -->
+  <div class="search-filter-controls">
+    <div class="search-box">
+      <input 
+        type="text" 
+        placeholder="Search files..." 
+        [ngModel]="filterForm.get('nameContains')?.value"
+        (ngModelChange)="onSearch($event)"
+      />
+      <button (click)="toggleFilterPanel()" class="filter-toggle">
+        <span>Filters</span>
+        <span *ngIf="isFilterPanelVisible">▲</span>
+        <span *ngIf="!isFilterPanelVisible">▼</span>
+      </button>
+    </div>
+    
+    <!-- Advanced Filter Panel -->
+    <div *ngIf="isFilterPanelVisible" class="filter-panel" [formGroup]="filterForm">
+      <div class="filter-row">
+        <label>
+          <input type="radio" formControlName="isDirectory" [value]="true"> 
+          Directories Only
+        </label>
+        <label>
+          <input type="radio" formControlName="isDirectory" [value]="false"> 
+          Files Only
+        </label>
+        <label>
+          <input type="radio" formControlName="isDirectory" [value]="null"> 
+          Both
+        </label>
+      </div>
+      
+      <div class="filter-row">
+        <label>
+          File Extension:
+          <input type="text" formControlName="extension" placeholder="e.g., txt, pdf">
+        </label>
+      </div>
+      
+      <div class="filter-row">
+        <label>
+          Min Size (bytes):
+          <input type="number" formControlName="minSize" min="0">
+        </label>
+        <label>
+          Max Size (bytes):
+          <input type="number" formControlName="maxSize" min="0">
+        </label>
+      </div>
+      
+      <div class="filter-actions">
+        <button (click)="applyFilters()">Apply Filters</button>
+        <button (click)="resetFilters()">Reset</button>
+      </div>
+    </div>
+  </div>
+  
+  <div class="path-hint">
+    <small *ngIf="!isRunningInDocker">Note: When running in Docker, Windows paths will be automatically converted to access the host filesystem.</small>
+    <div *ngIf="isRunningInDocker" class="docker-hint">
+      <strong>Docker Environment Detected</strong>
+      <p>Please use Linux paths to navigate the container filesystem:</p>
+      <ul>
+        <li><code>/</code> - Root of the container filesystem</li>
+        <li><code>/bin</code> - System binaries</li>
+        <li><code>/etc</code> - Configuration files</li>
+      </ul>
+      <p>If the host filesystem is mounted, you may be able to access it at a mount point like:</p>
+      <ul>
+        <li><code>/host</code> - Possible mount point for host filesystem</li>
+        <li><code>/mnt</code> - Common mount directory</li>
+      </ul>
+      <p class="docker-note">Windows-style paths (with backslashes and drive letters) are not directly accessible in Docker.</p>
+    </div>
+  </div>
+</div> 

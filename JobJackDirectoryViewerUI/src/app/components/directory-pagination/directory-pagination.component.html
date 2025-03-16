@@ -1,0 +1,15 @@
+<div *ngIf="totalPages > 1" class="pagination">
+  <button 
+    [disabled]="currentPage === 1 || isLoading" 
+    (click)="goToPage(currentPage - 1)"
+  >
+    Previous
+  </button>
+  <span>Page {{ currentPage }} of {{ totalPages }}</span>
+  <button 
+    [disabled]="currentPage === totalPages || isLoading" 
+    (click)="goToPage(currentPage + 1)"
+  >
+    Next
+  </button>
+</div> 
