@@ -9,8 +9,6 @@ export const typeDefs = gql`
       sortBy: SortInput, 
       filter: FilterInput
     ): DirectoryResult
-    cacheStats: CacheStats
-    watcherStats: WatcherStats
   }
 
   input SortInput {
@@ -53,21 +51,5 @@ export const typeDefs = gql`
     createdAt: String!
     permissions: String!
     isDirectory: Boolean!
-  }
-  
-  type CacheEntry {
-    path: String!
-    count: Int!
-    age: Int!
-  }
-  
-  type CacheStats {
-    size: Int!
-    entries: [CacheEntry!]!
-  }
-  
-  type WatcherStats {
-    count: Int!
-    paths: [String!]!
   }
 `; 
