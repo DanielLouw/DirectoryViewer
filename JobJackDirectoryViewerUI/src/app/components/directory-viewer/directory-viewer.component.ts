@@ -1,11 +1,9 @@
 import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { DirectoryService } from '../../services/directory.service';
 import { File, SortOption, FilterOption, SortField, SortOrder } from '../../models/file.model';
 import { FileSizePipe } from '../../pipes/file-size.pipe';
 import { environment } from '../../../environments/environment';
-import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { DirectoryControlsComponent } from '../directory-controls/directory-controls.component';
 import { DirectoryTableComponent } from '../directory-table/directory-table.component';
@@ -16,8 +14,6 @@ import { DirectoryPaginationComponent } from '../directory-pagination/directory-
   standalone: true,
   imports: [
     CommonModule, 
-    FormsModule, 
-    ReactiveFormsModule, 
     FileSizePipe,
     DirectoryControlsComponent,
     DirectoryTableComponent,
@@ -58,8 +54,6 @@ export class DirectoryViewerComponent implements OnInit {
   };
   
   // Filtering
-  filterForm: FormGroup;
-  private searchTerms = new Subject<string>();
   isFilterPanelVisible: boolean = false;
   currentFilters: FilterOption = {};
   
@@ -67,26 +61,8 @@ export class DirectoryViewerComponent implements OnInit {
   loadTime: number = 0;
 
   constructor(
-    private directoryService: DirectoryService,
-    private fb: FormBuilder
-  ) {
-    this.filterForm = this.fb.group({
-      nameContains: [''],
-      isDirectory: [null],
-      minSize: [null],
-      maxSize: [null],
-      extension: ['']
-    });
-
-    this.searchTerms.pipe(      
-      debounceTime(300),
-      distinctUntilChanged(),
-      takeUntilDestroyed(this.destroyRef)
-    ).subscribe(term => {
-      this.filterForm.patchValue({ nameContains: term });
-      this.applyFilters();
-    });
-  }
+    private directoryService: DirectoryService
+  ) {}
 
   ngOnInit(): void {
     this.isWindowsPath = navigator.platform.indexOf('Win') > -1;
@@ -120,6 +96,8 @@ export class DirectoryViewerComponent implements OnInit {
 
     const filter: FilterOption = this.getFilterValues();
     
+    console.log('Loading directory with sort:', JSON.stringify(this.currentSort));
+    
     this.directoryService.getDirectoryListing(
       this.currentPath, 
       skip, 
@@ -130,6 +108,7 @@ export class DirectoryViewerComponent implements OnInit {
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: (result) => {
+        console.log('API response:', result);
         this.items = result.items;
         this.totalItems = result.totalItems;
         this.totalPages = Math.ceil(this.totalItems / this.pageSize);
@@ -141,6 +120,7 @@ export class DirectoryViewerComponent implements OnInit {
         }
       },
       error: (error) => {
+        console.error('API error:', error);
         this.isLoading = false;
         this.error = 'Failed to load directory contents: ' + (error.message || 'Unknown error');
       }
@@ -215,17 +195,18 @@ export class DirectoryViewerComponent implements OnInit {
   }
 
   setSortField(field: SortField): void {
+    console.log('setSortField called with:', field);
+    console.log('Current sort before update:', JSON.stringify(this.currentSort));
+    
     if (this.currentSort.field === field) {
       this.currentSort.order = this.currentSort.order === SortOrder.ASC ? SortOrder.DESC : SortOrder.ASC;
     } else {
       this.currentSort = { field, order: SortOrder.ASC };
     }
+    
+    console.log('Current sort after update:', JSON.stringify(this.currentSort));
     this.currentPage = 1;
     this.loadDirectory();
-  }
-
-  onSearch(term: string): void {
-    this.searchTerms.next(term);
   }
 
   applyFilters(): void {
@@ -234,26 +215,19 @@ export class DirectoryViewerComponent implements OnInit {
   }
 
   resetFilters(): void {
-    this.filterForm.reset({
-      nameContains: '',
-      isDirectory: null,
-      minSize: null,
-      maxSize: null,
-      extension: ''
-    });
+    this.currentFilters = {};
     this.currentPage = 1;
     this.loadDirectory();
   }
 
   getFilterValues(): FilterOption {
-    const formValues = this.filterForm.value;
     const filter: FilterOption = {};
     
-    if (formValues.nameContains) filter.nameContains = formValues.nameContains;
-    if (formValues.isDirectory !== null) filter.isDirectory = formValues.isDirectory;
-    if (formValues.minSize) filter.minSize = Number(formValues.minSize);
-    if (formValues.maxSize) filter.maxSize = Number(formValues.maxSize);
-    if (formValues.extension) filter.extension = formValues.extension;
+    if (this.currentFilters.nameContains) filter.nameContains = this.currentFilters.nameContains;
+    if (this.currentFilters.isDirectory !== null) filter.isDirectory = this.currentFilters.isDirectory;
+    if (this.currentFilters.minSize) filter.minSize = Number(this.currentFilters.minSize);
+    if (this.currentFilters.maxSize) filter.maxSize = Number(this.currentFilters.maxSize);
+    if (this.currentFilters.extension) filter.extension = this.currentFilters.extension;
     
     return filter;
   }

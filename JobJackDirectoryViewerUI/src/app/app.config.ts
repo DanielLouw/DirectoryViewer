@@ -10,13 +10,9 @@ import { provideHttpClient, withInterceptorsFromDi, HttpHeaders } from '@angular
 import { environment } from '../environments/environment';
 
 export function createApollo(httpLink: HttpLink): ApolloClientOptions<any> {
-  // Ensure API URL has trailing slash
+  
   const apiUrl = environment.apiUrl.endsWith('/') ? environment.apiUrl : `${environment.apiUrl}/`;
   
-  // Log the API URL for debugging
-  console.log('Configuring Apollo with API URL:', apiUrl);
-  
-  // Set up basic headers - CORS headers should be handled by the server
   const headers = new HttpHeaders()
     .set('Content-Type', 'application/json')
     .set('Accept', 'application/json');

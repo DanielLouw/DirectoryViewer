@@ -17,8 +17,8 @@ export enum SortField {
 }
 
 export enum SortOrder {
-    ASC = 'asc',
-    DESC = 'desc'
+    ASC = 'ASC',
+    DESC = 'DESC'
 }
 
 export interface SortOption {

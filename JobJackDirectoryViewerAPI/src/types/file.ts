@@ -15,16 +15,16 @@ export interface DirectoryResult {
 }
 
 export enum SortField {
-    NAME = 'name',
-    SIZE = 'size',
-    CREATED_AT = 'createdAt',
-    EXTENSION = 'extension',
-    IS_DIRECTORY = 'isDirectory'
+    NAME = 'NAME',
+    SIZE = 'SIZE',
+    CREATED_AT = 'CREATED_AT',
+    EXTENSION = 'EXTENSION',
+    IS_DIRECTORY = 'IS_DIRECTORY'
 }
 
 export enum SortOrder {
-    ASC = 'asc',
-    DESC = 'desc'
+    ASC = 'ASC',
+    DESC = 'DESC'
 }
 
 export interface SortOption {
