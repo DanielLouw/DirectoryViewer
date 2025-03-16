@@ -1,20 +1,33 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, DestroyRef, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup } from '@angular/forms';
 import { DirectoryService } from '../../services/directory.service';
-import { File, SortField, SortOrder, SortOption, FilterOption } from '../../models/file.model';
+import { File, SortOption, FilterOption, SortField, SortOrder } from '../../models/file.model';
 import { FileSizePipe } from '../../pipes/file-size.pipe';
 import { environment } from '../../../environments/environment';
-import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { Subject, debounceTime, distinctUntilChanged } from 'rxjs';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DirectoryControlsComponent } from '../directory-controls/directory-controls.component';
+import { DirectoryTableComponent } from '../directory-table/directory-table.component';
+import { DirectoryPaginationComponent } from '../directory-pagination/directory-pagination.component';
 
 @Component({
   selector: 'app-directory-viewer',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, FileSizePipe],
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    ReactiveFormsModule, 
+    FileSizePipe,
+    DirectoryControlsComponent,
+    DirectoryTableComponent,
+    DirectoryPaginationComponent
+  ],
   templateUrl: './directory-viewer.component.html',
-  styleUrls: ['./directory-viewer.component.scss']
+  styleUrls: ['./directory-viewer.component.scss'],
 })
-export class DirectoryViewerComponent implements OnInit, OnDestroy {
+export class DirectoryViewerComponent implements OnInit {
+  private readonly destroyRef = inject(DestroyRef);
   currentPath: string = '';
   items: File[] = [];
   isLoading: boolean = false;
@@ -31,7 +44,15 @@ export class DirectoryViewerComponent implements OnInit, OnDestroy {
   isRunningInDocker: boolean = false;
   
   // Sorting
-  sortOptions: SortOption = {
+  sortFields = [
+    { label: 'Name', value: SortField.NAME },
+    { label: 'Size', value: SortField.SIZE },
+    { label: 'Created', value: SortField.CREATED_AT },
+    { label: 'Type', value: SortField.EXTENSION },
+    { label: 'Is Directory', value: SortField.IS_DIRECTORY }
+  ];
+
+  currentSort: SortOption = {
     field: SortField.IS_DIRECTORY,
     order: SortOrder.DESC
   };
@@ -39,34 +60,16 @@ export class DirectoryViewerComponent implements OnInit, OnDestroy {
   // Filtering
   filterForm: FormGroup;
   private searchTerms = new Subject<string>();
-  private destroy$ = new Subject<void>();
-  
-  // Toggle filter panel
   isFilterPanelVisible: boolean = false;
+  currentFilters: FilterOption = {};
   
   // Performance metrics
   loadTime: number = 0;
-  
-  // Available sort fields for the dropdown
-  sortFields = [
-    { value: SortField.NAME, label: 'Name' },
-    { value: SortField.SIZE, label: 'Size' },
-    { value: SortField.CREATED_AT, label: 'Created Date' },
-    { value: SortField.EXTENSION, label: 'Extension' },
-    { value: SortField.IS_DIRECTORY, label: 'Type (Directory/File)' }
-  ];
-  
-  // Available sort orders for the dropdown
-  sortOrders = [
-    { value: SortOrder.ASC, label: 'Ascending' },
-    { value: SortOrder.DESC, label: 'Descending' }
-  ];
 
   constructor(
     private directoryService: DirectoryService,
     private fb: FormBuilder
   ) {
-    // Initialize filter form
     this.filterForm = this.fb.group({
       nameContains: [''],
       isDirectory: [null],
@@ -74,79 +77,33 @@ export class DirectoryViewerComponent implements OnInit, OnDestroy {
       maxSize: [null],
       extension: ['']
     });
-  }
 
-  ngOnInit(): void {
-    // Detect if user is likely on Windows
-    this.isWindowsPath = navigator.platform.indexOf('Win') > -1;
-    
-    // Use the environment flag to determine if running in Docker
-    this.isRunningInDocker = this.detectDockerEnvironment();
-    console.log(`Running in Docker: ${this.isRunningInDocker}`);
-    
-    // Start with user's home directory or a default path
-    this.currentPath = this.getDefaultPath();
-    
-    // Set up debounced search
-    this.searchTerms.pipe(
-      takeUntil(this.destroy$),
-      debounceTime(300), // Wait for 300ms after the last event
-      distinctUntilChanged() // Only emit if value is different from previous
+    this.searchTerms.pipe(      
+      debounceTime(300),
+      distinctUntilChanged(),
+      takeUntilDestroyed(this.destroyRef)
     ).subscribe(term => {
       this.filterForm.patchValue({ nameContains: term });
       this.applyFilters();
     });
-    
-    // Load initial directory
-    this.loadDirectory();
-  }
-  
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
   }
 
-  /**
-   * Detect if we're running in a Docker environment
-   * Uses the explicit flag from environment configuration
-   */
+  ngOnInit(): void {
+    this.isWindowsPath = navigator.platform.indexOf('Win') > -1;
+    this.isRunningInDocker = this.detectDockerEnvironment();
+    this.currentPath = this.getDefaultPath();
+    this.loadDirectory();
+  }
+
   detectDockerEnvironment(): boolean {
-    // Use the explicit isDocker flag from environment
-    const isDocker = environment.isDocker;
-    
-    // Log environment details for debugging
-    console.log(`Environment: ${environment.production ? 'Production' : 'Development'}`);
-    console.log(`API URL: ${environment.apiUrl}`);
-    console.log(`Docker flag: ${isDocker}`);
-    
-    return isDocker;
+    return environment.isDocker;
   }
 
   getDefaultPath(): string {
-    // If running in Docker, always default to Linux paths
     if (this.isRunningInDocker) {
       return '/';
     }
-    
-    // Otherwise, provide OS-appropriate default paths
-    if (this.isWindowsPath) {
-      return 'C:\\Users';
-    } else {
-      return '/home';
-    }
-  }
-
-  /**
-   * Returns a hint string for the path format based on the current environment
-   */
-  getPathFormatHint(): string {
-    if (this.isRunningInDocker) {
-      return 'Enter Linux path (e.g., /)';
-    }
-    
-    return this.isWindowsPath ? 
-      'Enter Windows path (e.g., C:\\Users\\Public)' : 
-      'Enter Linux path (e.g., /home/user)';
+    return this.isWindowsPath ? 'C:\\Users' : '/home';
   }
 
   loadDirectory(): void {
@@ -155,112 +112,89 @@ export class DirectoryViewerComponent implements OnInit, OnDestroy {
     const skip = (this.currentPage - 1) * this.pageSize;
     const startTime = performance.now();
 
-    // If running in Docker and the path is a Windows path, convert it to a Linux path
     if (this.isRunningInDocker && this.currentPath.includes('\\')) {
-      console.log('Windows paths are not supported in Docker environment');
       this.error = 'Windows paths are not directly accessible in Docker. Please use Linux paths (e.g., /)';
       this.isLoading = false;
       return;
     }
 
-    // Display a hint about path format
-    console.log(`Sending path to API: ${this.currentPath}`);
-    
-    // Get current filter values
     const filter: FilterOption = this.getFilterValues();
     
     this.directoryService.getDirectoryListing(
       this.currentPath, 
       skip, 
       this.pageSize, 
-      this.sortOptions, 
+      this.currentSort,
       Object.keys(filter).length > 0 ? filter : undefined
-    )
-      .subscribe({
-        next: (result) => {
-          this.items = result.items;
-          this.totalItems = result.totalCount;
-          this.totalPages = Math.ceil(this.totalItems / this.pageSize);
-          this.isLoading = false;
-          this.loadTime = performance.now() - startTime;
-          console.log(`Directory loaded in ${this.loadTime.toFixed(2)}ms`);
-          
-          if (result.error) {
-            this.error = result.error;
-          }
-        },
-        error: (error) => {
-          this.isLoading = false;
-          this.error = 'Failed to load directory contents: ' + (error.message || 'Unknown error');
-          console.error('Error loading directory:', error);
+    ).pipe(
+      takeUntilDestroyed(this.destroyRef)
+    ).subscribe({
+      next: (result) => {
+        this.items = result.items;
+        this.totalItems = result.totalItems;
+        this.totalPages = Math.ceil(this.totalItems / this.pageSize);
+        this.isLoading = false;
+        this.loadTime = performance.now() - startTime;
+        
+        if (result.error) {
+          this.error = result.error;
         }
-      });
+      },
+      error: (error) => {
+        this.isLoading = false;
+        this.error = 'Failed to load directory contents: ' + (error.message || 'Unknown error');
+      }
+    });
   }
 
   navigateToDirectory(item: File): void {
     if (item.isDirectory) {
       this.currentPath = item.path;
-      this.currentPage = 1; // Reset to first page when navigating
+      this.currentPage = 1;
       this.loadDirectory();
     }
   }
 
   navigateToParent(): void {
-    // If running in Docker, always use Linux path format
     if (this.isRunningInDocker) {
-      if (this.currentPath === '/') {
-        return; // Already at root
-      }
+      if (this.currentPath === '/') return;
       
-      // Remove trailing slash if present
       let path = this.currentPath;
       if (path.endsWith('/')) {
         path = path.slice(0, -1);
       }
       
-      // Get parent directory
       const lastSeparatorIndex = path.lastIndexOf('/');
       if (lastSeparatorIndex > 0) {
         this.currentPath = path.substring(0, lastSeparatorIndex);
       } else {
         this.currentPath = '/';
       }
-      
-      this.currentPage = 1;
-      this.loadDirectory();
-      return;
-    }
-    
-    // Use the appropriate separator based on the path format
-    const isWindowsPath = this.currentPath.includes('\\');
-    const separator = isWindowsPath ? '\\' : '/';
-    
-    // Handle root directory cases
-    if (this.currentPath === '/' || 
-        (isWindowsPath && this.currentPath.match(/^[A-Z]:\\$/i))) {
-      return; // Already at root
-    }
-    
-    // Remove trailing slash if present
-    let path = this.currentPath;
-    if (path.endsWith(separator)) {
-      path = path.slice(0, -1);
-    }
-    
-    // Get parent directory
-    const lastSeparatorIndex = path.lastIndexOf(separator);
-    if (lastSeparatorIndex > 0) {
-      this.currentPath = path.substring(0, lastSeparatorIndex);
-      // For Windows, ensure drive letter has trailing backslash
-      if (isWindowsPath && this.currentPath.match(/^[A-Z]:$/i)) {
-        this.currentPath += '\\';
-      }
-    } else if (isWindowsPath) {
-      // If we're at a drive root (e.g., C:\Users), go to drive list
-      this.currentPath = 'C:\\';
     } else {
-      // If we're at a Unix path like /home, go to root
-      this.currentPath = '/';
+      const isWindowsPath = this.currentPath.includes('\\');
+      const separator = isWindowsPath ? '\\' : '/';
+      
+      if (this.currentPath === '/' || 
+          (isWindowsPath && this.currentPath.match(/^[A-Z]:\\$/i))) {
+        return;
+      }
+      
+      let path = this.currentPath;
+      if (path.endsWith(separator)) {
+        path = path.slice(0, -1);
+      }
+      
+      const lastSeparatorIndex = path.lastIndexOf(separator);
+      if (lastSeparatorIndex > 0) {
+        this.currentPath = path.substring(0, lastSeparatorIndex);
+        if (isWindowsPath && this.currentPath.match(/^[A-Z]:$/i)) {
+          this.currentPath += '\\';
+        }
+      } else if (isWindowsPath) {
+        this.currentPath = 'C:\\';
+      } else {
+        this.currentPath = '/';
+      }
     }
     
     this.currentPage = 1;
@@ -268,14 +202,7 @@ export class DirectoryViewerComponent implements OnInit, OnDestroy {
   }
 
   navigateToRoot(): void {
-    // If running in Docker, always use Linux root
-    if (this.isRunningInDocker) {
-      this.currentPath = '/';
-    } else {
-      // Use the appropriate root path based on detected OS
-      this.currentPath = this.isWindowsPath ? 'C:\\' : '/';
-    }
-    
+    this.currentPath = this.isRunningInDocker ? '/' : (this.isWindowsPath ? 'C:\\' : '/');
     this.currentPage = 1;
     this.loadDirectory();
   }
@@ -286,43 +213,26 @@ export class DirectoryViewerComponent implements OnInit, OnDestroy {
       this.loadDirectory();
     }
   }
-  
-  // Handle sorting
+
   setSortField(field: SortField): void {
-    if (this.sortOptions.field === field) {
-      // Toggle order if same field
-      this.sortOptions.order = this.sortOptions.order === SortOrder.ASC ? 
-        SortOrder.DESC : SortOrder.ASC;
+    if (this.currentSort.field === field) {
+      this.currentSort.order = this.currentSort.order === SortOrder.ASC ? SortOrder.DESC : SortOrder.ASC;
     } else {
-      // Set new field with default order
-      this.sortOptions.field = field;
-      this.sortOptions.order = SortOrder.ASC;
+      this.currentSort = { field, order: SortOrder.ASC };
     }
-    
-    this.currentPage = 1; // Reset to first page
+    this.currentPage = 1;
     this.loadDirectory();
   }
-  
-  // Get sort icon
-  getSortIcon(field: SortField): string {
-    if (this.sortOptions.field !== field) {
-      return '';
-    }
-    return this.sortOptions.order === SortOrder.ASC ? '↑' : '↓';
-  }
-  
-  // Handle search input
+
   onSearch(term: string): void {
     this.searchTerms.next(term);
   }
-  
-  // Apply filters
+
   applyFilters(): void {
-    this.currentPage = 1; // Reset to first page
+    this.currentPage = 1;
     this.loadDirectory();
   }
-  
-  // Reset filters
+
   resetFilters(): void {
     this.filterForm.reset({
       nameContains: '',
@@ -334,51 +244,27 @@ export class DirectoryViewerComponent implements OnInit, OnDestroy {
     this.currentPage = 1;
     this.loadDirectory();
   }
-  
-  // Get filter values
+
   getFilterValues(): FilterOption {
     const formValues = this.filterForm.value;
     const filter: FilterOption = {};
     
-    if (formValues.nameContains) {
-      filter.nameContains = formValues.nameContains;
-    }
-    
-    if (formValues.isDirectory !== null) {
-      filter.isDirectory = formValues.isDirectory;
-    }
-    
-    if (formValues.minSize) {
-      filter.minSize = Number(formValues.minSize);
-    }
-    
-    if (formValues.maxSize) {
-      filter.maxSize = Number(formValues.maxSize);
-    }
-    
-    if (formValues.extension) {
-      filter.extension = formValues.extension;
-    }
+    if (formValues.nameContains) filter.nameContains = formValues.nameContains;
+    if (formValues.isDirectory !== null) filter.isDirectory = formValues.isDirectory;
+    if (formValues.minSize) filter.minSize = Number(formValues.minSize);
+    if (formValues.maxSize) filter.maxSize = Number(formValues.maxSize);
+    if (formValues.extension) filter.extension = formValues.extension;
     
     return filter;
   }
 
-  formatFileSize(size: number): string {
-    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    let index = 0;
-    while (size >= 1024 && index < units.length - 1) {
-      size /= 1024;
-      index++;
-    }
-    return `${size.toFixed(2)} ${units[index]}`;
+  onFilterChange(filters: FilterOption): void {
+    this.currentFilters = filters;
+    this.currentPage = 1;
+    this.loadDirectory();
   }
 
-  formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleString();
+  onPathChange(path: string): void {
+    this.currentPath = path;
   }
-
-  // Toggle filter panel
-  toggleFilterPanel(): void {
-    this.isFilterPanelVisible = !this.isFilterPanelVisible;
-  }
-} 
+}

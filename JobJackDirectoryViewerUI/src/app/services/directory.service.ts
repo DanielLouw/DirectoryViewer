@@ -1,20 +1,19 @@
 import { Injectable } from '@angular/core';
-import { Apollo } from 'apollo-angular';
-import { gql } from '@apollo/client/core';
+import { Apollo, gql } from 'apollo-angular';
 import { Observable, map } from 'rxjs';
-import { File, SortOption, FilterOption, DirectoryResult } from '../models/file.model';
+import { File, SortOption, FilterOption, DirectoryResult, SortField, SortOrder } from '../models/file.model';
 import { environment } from '../../environments/environment';
 
 const GET_DIRECTORY_LISTING = gql`
   query GetDirectoryListing(
-    $dirPath: String!, 
-    $skip: Int, 
-    $limit: Int, 
+    $path: String!, 
+    $skip: Int!, 
+    $limit: Int!, 
     $sortBy: SortInput, 
     $filter: FilterInput
   ) {
     directoryListing(
-      dirPath: $dirPath, 
+      dirPath: $path, 
       skip: $skip, 
       limit: $limit, 
       sortBy: $sortBy, 
@@ -24,10 +23,10 @@ const GET_DIRECTORY_LISTING = gql`
         name
         path
         size
-        extension
+        isDirectory
         createdAt
         permissions
-        isDirectory
+        extension
       }
       totalCount
       error
@@ -63,28 +62,47 @@ const GET_WATCHER_STATS = gql`
 export class DirectoryService {
   constructor(private apollo: Apollo) {}
 
+  private convertSortOption(sort?: SortOption): { field: string; order: string } | undefined {
+    if (!sort) return undefined;
+    
+    return {
+      field: sort.field,
+      order: sort.order.toUpperCase()
+    };
+  }
+
   getDirectoryListing(
-    path: string, 
-    skip: number = 0, 
-    limit: number = 20,
+    path: string,
+    skip: number,
+    limit: number,
     sortBy?: SortOption,
     filter?: FilterOption
   ): Observable<DirectoryResult> {
     return this.apollo
-      .watchQuery({
+      .query<{
+        directoryListing: {
+          items: File[];
+          totalCount: number;
+          error?: string;
+        };
+      }>({
         query: GET_DIRECTORY_LISTING,
         variables: {
-          dirPath: path,
+          path,
           skip,
           limit,
-          sortBy,
+          sortBy: sortBy ? {
+            field: sortBy.field,
+            order: sortBy.order.toUpperCase()
+          } : undefined,
           filter
-        }
+        },
+        fetchPolicy: 'network-only'
       })
-      .valueChanges.pipe(
-        map((result: any) => ({
+      .pipe(
+        map(result => ({
           items: result.data.directoryListing.items,
-          totalCount: result.data.directoryListing.totalCount,
+          totalItems: result.data.directoryListing.totalCount,
           error: result.data.directoryListing.error
         }))
       );
@@ -110,5 +128,20 @@ export class DirectoryService {
       .valueChanges.pipe(
         map((result: any) => result.data.watcherStats)
       );
+  }
+
+  getParentPath(path: string): string {
+    // Remove trailing slash if present
+    if (path.endsWith('/')) {
+      path = path.slice(0, -1);
+    }
+
+    // Find the last separator
+    const lastSeparatorIndex = path.lastIndexOf('/');
+    if (lastSeparatorIndex <= 0) {
+      return '/';
+    }
+
+    return path.substring(0, lastSeparatorIndex);
   }
 } 
